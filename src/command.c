@@ -5016,17 +5016,19 @@ int main(int argc, const char *argv[], const char *envp[])
       // build command from rest of the arguments
       a++;
       cmd_buf_remaining = MAX_CMD_BUFLEN-1;
-      while (a < argc)
+      while (cmd_buf_remaining)
         {
         strncat(cmd_line, argv[a], cmd_buf_remaining);
         cmd_buf_remaining -= strlen(argv[a]);
+        a++;
+        if (a >= argc)
+          break;
         if (cmd_buf_remaining < 0)
           cmd_buf_remaining = 0;
         strncat(cmd_line, " ", cmd_buf_remaining);
         cmd_buf_remaining--;
         if (cmd_buf_remaining < 0)
           cmd_buf_remaining = 0;
-        a++;
         }
       parse_cmd_line();
       }
