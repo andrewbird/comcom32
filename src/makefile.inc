@@ -51,7 +51,13 @@ uninstall:
 	rm -rf $(DESTDIR)$(DATADIR)
 
 # static re-executes make, so we include that later
-ifeq ($(filter static install uninstall,$(MAKECMDGOALS)),)
+EXCL = static
+# if binary exists, no need to include DJMK for install/uninstall
+# w/o binary we need it to install the right ELF
+ifneq ($(wildcard $(RCMD)),)
+EXCL += install uninstall
+endif
+ifeq ($(filter $(EXCL),$(MAKECMDGOALS)),)
 # hook in dj64 - make sure to not do that before defining `all:` target
 DJMK = $(shell pkg-config --variable=makeinc $(TOOLC))
 ifeq ($(wildcard $(DJMK)),)
