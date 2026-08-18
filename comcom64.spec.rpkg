@@ -62,6 +62,7 @@ Summary: 64bit command.com
 %end
 
 %package comcom32
+BuildArch: noarch
 Summary: 32bit command.com
 %description comcom32
 32bit command.com to be used under DOS (bare-metal or under an emulator).
