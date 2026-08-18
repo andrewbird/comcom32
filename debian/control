@@ -6,7 +6,7 @@ Standards-Version: 3.9.7
 Build-Depends:
     make,
     pkgconf,
-    thunk-gen,
+    thunk-gen (>= 1.9),
     djstub,
     dj64-dev,
     dj32-dev,
