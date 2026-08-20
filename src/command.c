@@ -869,20 +869,33 @@ static void prompt_for_and_get_cmd(void)
   cputs("\r\n");
   }
 
-static int get_choice(const char *choices)
+static int do_get_choice(const char *choices, int case_s)
   {
   int choice, key;
 //  strupr(choices);
   do
     {
     key = keyb_get_rawcode();
-    if (KEY_ASCII(key) == 0)
-      continue;
-    } while (strchr(choices, toupper(key)) == NULL);
-  choice = toupper(key);
+    switch (KEY_ASCII(key))
+      {
+      case 0:
+        continue;
+      case 0x1b:
+      case 0xd:
+      case 3:
+        cputs("\r\n");
+        return -1;
+      }
+    } while (strchr(choices, case_s ? key : toupper(key)) == NULL);
+  choice = case_s ? key : toupper(key);
   cprintf("%c", choice);
   cputs("\r\n");
   return choice;
+  }
+
+static int get_choice(const char *choices)
+  {
+  return do_get_choice(choices, false);
   }
 
 static void shift_cmdline(void)
@@ -2124,9 +2137,10 @@ static void perform_change_drive(void)
 
 static void perform_choice(const char *arg)
   {
-  const char *choices = "YN";  // Y,N are the default choices
+  char choices[MAX_CMD_BUFLEN] = "YN";  // Y,N are the default choices
   const char *text = "";
   int supress_prompt = false;
+  int case_s = false;
   int choice;
 
   while (*arg != '\0')
@@ -2139,9 +2153,13 @@ static void perform_choice(const char *arg)
     else
       {
       if (strnicmp(cmd_switch,"/c:", 3) == 0 && strlen(cmd_switch) > 3)
-        choices = cmd_switch+3;
+        strlcpy(choices, cmd_switch+3, sizeof(choices));
+      else if (strnicmp(cmd_switch,"/c", 2) == 0 && strlen(cmd_switch) > 2)
+        strlcpy(choices, cmd_switch+2, sizeof(choices));
       else if (stricmp(cmd_switch,"/n") == 0)
         supress_prompt = true;
+      else if (stricmp(cmd_switch,"/s") == 0)
+        case_s = true;
       else
         {
         cprintf("Invalid switch - %s\r\n", cmd_switch);
@@ -2166,12 +2184,17 @@ static void perform_choice(const char *arg)
         first = false;
       else
         putch(',');
-      putch(toupper(*c));
+      putch(case_s ? *c : toupper(*c));
       c++;
       }
-    cputs("]?");
+    cputs("]? ");
     }
-  choice = get_choice(choices);
+  choice = do_get_choice(choices, case_s);
+  if (choice == -1)
+    {
+    reset_batfile_call_stack();
+    return;
+    }
   error_level = strchr(choices, choice) - choices + 1;
   return;
   }
