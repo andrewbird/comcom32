@@ -4629,8 +4629,6 @@ quot:
       extr = saved_extr;
       }
     }
-  conv_unix_path_to_ms_dos(pipe_file[STDIN_INDEX]);
-  conv_unix_path_to_ms_dos(pipe_file[STDOUT_INDEX]);
 
   // done with variables and pipes -- now, skip leading spaces
   extr = cmd_line;
@@ -4707,8 +4705,23 @@ static void exec_cmd(int call)
   else // open the pipe file
     {
     if (pipe_file_redir_count[STDIN_INDEX] > 0)
+      {
+      conv_unix_path_to_ms_dos(pipe_file[STDIN_INDEX]);
       pipe_fno[STDIN_INDEX] = open(pipe_file[STDIN_INDEX], O_TEXT|O_RDONLY, S_IRUSR);
-
+      }
+    if (pipe_file_redir_count[STDOUT_INDEX] > 0)
+      {
+      char temp_path[MAXPATH];
+      if (_truename(pipe_file[STDOUT_INDEX], temp_path))
+        strcpy(pipe_file[STDOUT_INDEX], temp_path);
+      else
+        {
+        cprintf("Redirection to %s failed\r\n", pipe_file[STDOUT_INDEX]);
+        reset_batfile_call_stack();
+        goto Exit;
+        }
+      conv_unix_path_to_ms_dos(pipe_file[STDOUT_INDEX]);
+      }
     if (pipe_file_redir_count[STDOUT_INDEX] > 1)
       pipe_fno[STDOUT_INDEX] = open(pipe_file[STDOUT_INDEX], O_BINARY|O_WRONLY|O_APPEND|O_CREAT, S_IRUSR | S_IWUSR); // open for append
     else if (pipe_file_redir_count[STDOUT_INDEX] == 1)
@@ -4822,7 +4835,7 @@ static void exec_cmd(int call)
     exec_cmd(true);
     }
 
-/* Exit: */
+Exit:
   cmd_line[0] = '\0';
   if (redir_result[STDIN_INDEX] != -1) {
     dup2(old_std_fno[STDIN_INDEX], STDIN_INDEX);
